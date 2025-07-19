@@ -46,10 +46,12 @@ There is a sample in /usr/share/doc/openvpn/sample/sample-config-files/server.co
 and in config/server.conf
 
 # Enable and start OpenVPN server
+
+```bash
 sudo systemctl enable openvpn-server@server
 sudo systemctl start openvpn-server@server
 sudo systemctl status openvpn-server@server
-"""
+```
 ### Troubleshooting
 Check logs: journalctl -u openvpn-server@server
 
