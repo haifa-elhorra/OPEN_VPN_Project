@@ -1,85 +1,69 @@
-#!/bin/bash
+# OpenVPN Server Setup for Fedora
 
-# OpenVPN Server Auto-Installer for Fedora
-# Version 1.0
-# Requires root/sudo privileges
+Complete guide to set up an OpenVPN server on Fedora Linux.
 
-# Color codes for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+## Prerequisites
+- Fedora server with sudo/root access
+- Stable internet connection
+- Basic terminal knowledge
 
-# Check if running as root
-if [ "$(id -u)" -ne 0 ]; then
-  echo -e "${RED}This script must be run as root${NC}" >&2
-  exit 1
-fi
+## Installation Steps
 
-# Header
-echo -e "${GREEN}"
-echo "##################################################"
-echo "#          OpenVPN Server Auto-Installer         #"
-echo "#                for Fedora Linux                #"
-echo "##################################################"
-echo -e "${NC}"
+### 1. Update System and Install Packages
+bash
+sudo dnf update -y
+sudo dnf install -y openvpn easy-rsa
 
-# Step 1: System Update
-echo -e "${YELLOW}[1/7] Updating system packages...${NC}"
-dnf update -y
-if [ $? -ne 0 ]; then
-  echo -e "${RED}System update failed${NC}" >&2
-  exit 1
-fi
+2. Initialize PKI Infrastructure
+bash
+sudo mkdir -p /etc/openvpn/easy-rsa
+sudo cp -r /usr/share/easy-rsa/3/* /etc/openvpn/easy-rsa/
+cd /etc/openvpn/easy-rsa
+3. Create Certificate Authority
+bash
+sudo ./easyrsa init-pki
+sudo ./easyrsa build-ca nopass
+4. Generate Server Certificates
+bash
+sudo ./easyrsa gen-req server nopass
+sudo ./easyrsa sign-req server server
+sudo ./easyrsa gen-dh
+sudo openvpn --genkey --secret ta.key
+5. Copy Certificates
+bash
+sudo mkdir -p /etc/openvpn/server
+sudo cp pki/ca.crt pki/private/server.key pki/issued/server.crt ta.key pki/dh.pem /etc/openvpn/server/
+6. Enable IP Forwarding
+bash
+echo 'net.ipv4.ip_forward=1' | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+7. Start OpenVPN Service
+bash
+sudo systemctl enable --now openvpn-server@server
+sudo systemctl status openvpn-server@server
+Post-Installation
+Configure your server:
 
-# Step 2: Install dependencies
-echo -e "${YELLOW}[2/7] Installing OpenVPN and Easy-RSA...${NC}"
-dnf install -y openvpn easy-rsa
-if [ $? -ne 0 ]; then
-  echo -e "${RED}Package installation failed${NC}" >&2
-  exit 1
-fi
+bash
+sudo nano /etc/openvpn/server/server.conf
+Generate client certificates:
 
-# Step 3: Setup PKI
-echo -e "${YELLOW}[3/7] Setting up PKI infrastructure...${NC}"
-mkdir -p /etc/openvpn/easy-rsa
-cp -r /usr/share/easy-rsa/3/* /etc/openvpn/easy-rsa/
-cd /etc/openvpn/easy-rsa || exit
+bash
+cd /etc/openvpn/easy-rsa
+sudo ./easyrsa gen-req client1 nopass
+sudo ./easyrsa sign-req client client1
+Set up firewall rules if needed
 
-./easyrsa init-pki
-echo -e "${YELLOW}Creating Certificate Authority (leave fields blank for defaults)${NC}"
-./easyrsa build-ca nopass
+Verification
+Check service status:
 
-# Step 4: Generate server certificates
-echo -e "${YELLOW}[4/7] Generating server certificates...${NC}"
-./easyrsa gen-req server nopass
-./easyrsa sign-req server server
-./easyrsa gen-dh
-openvpn --genkey --secret ta.key
+bash
+journalctl -u openvpn-server@server -f
+Troubleshooting
+Service won't start: Check /var/log/messages or journalctl -xe
 
-# Step 5: Copy certificates
-echo -e "${YELLOW}[5/7] Copying certificates to OpenVPN directory...${NC}"
-mkdir -p /etc/openvpn/server
-cp pki/ca.crt pki/private/server.key pki/issued/server.crt ta.key pki/dh.pem /etc/openvpn/server/
+Connection issues: Verify certificates and ports (default: 1194/udp)
 
-# Step 6: Enable IP forwarding
-echo -e "${YELLOW}[6/7] Configuring network settings...${NC}"
-echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
-sysctl -p
+Client can't connect: Ensure proper routing and firewall rules
 
-# Step 7: Start service
-echo -e "${YELLOW}[7/7] Starting OpenVPN service...${NC}"
-systemctl enable --now openvpn-server@server
-systemctl status openvpn-server@server
-
-# Completion message
-echo -e "${GREEN}"
-echo "##################################################"
-echo "#          Installation Completed!               #"
-echo "#                                                #"
-echo "# Next steps:                                    #"
-echo "# 1. Configure /etc/openvpn/server/server.conf   #"
-echo "# 2. Generate client certificates                #"
-echo "# 3. Configure firewall rules                    #"
-echo "##################################################"
-echo -e "${NC}"
+Note: Remember to configure your server settings in /etc/openvpn/server/server.conf after installation
