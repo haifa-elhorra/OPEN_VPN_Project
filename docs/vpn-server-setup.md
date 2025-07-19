@@ -14,3 +14,45 @@ This guide provides step-by-step instructions to set up an OpenVPN server on Fed
 sudo dnf update -y
 sudo dnf install -y openvpn easy-rsa
  ```
+
+##  Certificate Authority Setup
+2. Initialize Easy-RSA and create certificates:
+   
+```bash
+sudo cp -r /usr/share/easy-rsa /etc/openvpn/
+cd /etc/openvpn/easy-rsa
+sudo ./easyrsa init-pki
+sudo ./easyrsa build-ca nopass
+sudo ./easyrsa gen-req server nopass
+sudo ./easyrsa sign-req server server
+sudo ./easyrsa gen-dh
+sudo openvpn --genkey --secret ta.key
+ ```
+
+## Server Configuration
+3. Copy certificates and keys to OpenVPN directory:
+       
+```bash
+sudo cp pki/ca.crt pki/private/server.key pki/issued/server.crt ta.key pki/dh.pem /etc/openvpn/server/
+ ```
+4. Enable IP forwarding:
+
+```bash
+sudo sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
+sudo sysctl -p
+ ```
+### Next Steps
+Configure your OpenVPN server configuration file (/etc/openvpn/server/server.conf)
+
+Set up client authentication
+
+Configure firewall rules to allow VPN traffic
+
+### Troubleshooting
+Check logs: journalctl -u openvpn-server@server
+
+Verify certificates are in correct locations
+
+Ensure IP forwarding is enabled
+
+   
