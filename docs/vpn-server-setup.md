@@ -41,13 +41,15 @@ sudo cp pki/ca.crt pki/private/server.key pki/issued/server.crt ta.key pki/dh.pe
 sudo sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
 sudo sysctl -p
  ```
-### Next Steps
-Configure your OpenVPN server configuration file (/etc/openvpn/server/server.conf)
+## Configure OpenVPN server configuration file /etc/openvpn/server/server.conf
+There is a sample in /usr/share/doc/openvpn/sample/sample-config-files/server.conf
+and in config/server.conf
 
-Set up client authentication
-
-Configure firewall rules to allow VPN traffic
-
+# Enable and start OpenVPN server
+sudo systemctl enable openvpn-server@server
+sudo systemctl start openvpn-server@server
+sudo systemctl status openvpn-server@server
+"""
 ### Troubleshooting
 Check logs: journalctl -u openvpn-server@server
 
