@@ -4,7 +4,6 @@ This guide provides step-by-step instructions to set up an OpenVPN server on Fed
 
 ## Prerequisites
 - A Fedora Linux server with root/sudo access
-- Basic familiarity with command line operations
 
 ## Installation
 
